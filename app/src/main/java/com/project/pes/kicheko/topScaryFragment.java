@@ -51,6 +51,8 @@ public class topScaryFragment extends Fragment {
 // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
         if (id == R.id.action_refresh) {
+            FetchDataTask dataTask = new FetchDataTask();
+            dataTask.execute();
             return true;
         }
         return super.onOptionsItemSelected(item);
@@ -113,6 +115,7 @@ public class topScaryFragment extends Fragment {
                      return null;
                 }
                 forecastJsonStr = buffer.toString();
+
                 Log.v(LOG_TAG, "Forecast JSON String: "+forecastJsonStr);
             } catch (IOException e) {
                 Log.e("PlaceholderFragment", "Error ", e);
