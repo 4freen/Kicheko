@@ -1,0 +1,13 @@
+applications:
+- services:
+  - kicheko:MAS
+  - kicheko:Push
+  - kicheko:MobileData
+  disk_quota: 1024M
+  host: kicheko
+  name: kicheko
+  command: node app.js
+  path: .
+  domain: mybluemix.net
+  instances: 1
+  memory: 128M
