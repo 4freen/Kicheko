@@ -1,7 +1,7 @@
 package com.project.pes.kicheko;
 
 /**
- * Created by apple on 25/10/14.
+ * Created by Afreen on 25/10/14.
  */
 
 import android.os.AsyncTask;
@@ -27,15 +27,13 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
 
 public class topScaryFragment extends Fragment {
 
-    private ArrayAdapter<String> mForecastAdapter;
+    private ArrayAdapter<String> ArticleAdapter;
 
     public topScaryFragment() {
     }
@@ -68,14 +66,14 @@ public class topScaryFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        String[] flist = {"Today-Sunny", "Tomorrow-Windy", "Wed-Rain", "Thursday-Hail", "Friday-Snow", "Saturday-Rain", "Sunday-Cloudy"};
+        String[] flist = {"Article_name", "Article_name", "Article_name", "Article_name", "Article_name", "Article_name", "Article_name"};
 
-        List<String> weekForecast = new ArrayList<String>(Arrays.asList(flist));
+        List<String> listArticles = new ArrayList<String>(Arrays.asList(flist));
         View rootView = inflater.inflate(R.layout.fragment_scary, container, false);
-        mForecastAdapter = new ArrayAdapter<String>(getActivity(), R.layout.list_item_article, R.id.list_item_article_tv, weekForecast);
+        ArticleAdapter = new ArrayAdapter<String>(getActivity(), R.layout.list_item_article, R.id.list_item_article_tv, listArticles);
 
-        ListView forecastlist = (ListView) rootView.findViewById(R.id.listView_article);
-        forecastlist.setAdapter(mForecastAdapter);
+        ListView articlelist = (ListView) rootView.findViewById(R.id.listView_article);
+        articlelist.setAdapter(ArticleAdapter);
         return rootView;
     }
 
@@ -83,125 +81,80 @@ public class topScaryFragment extends Fragment {
     public class FetchDataTask extends AsyncTask<String, Void, String[]> {
         private final String LOG_TAG = FetchDataTask.class.getSimpleName();
 
-        private String getReadableDateString(long time) {
-// Because the API returns a unix timestamp (measured in seconds),
-// it must be converted to milliseconds in order to be converted to valid date.
-            Date date = new Date(time * 1000);
-            SimpleDateFormat format = new SimpleDateFormat("E, MMM d");
-            return format.format(date).toString();
-        }
 
-        /**
-         * Prepare the weather high/lows for presentation.
-         */
-        private String formatHighLows(double high, double low) {
-// For presentation, assume the user doesn't care about tenths of a degree.
-            long roundedHigh = Math.round(high);
-            long roundedLow = Math.round(low);
-
-            String highLowStr = roundedHigh + "/" + roundedLow;
-            return highLowStr;
-        }
-
-        /**
-         * Take the String representing the complete forecast in JSON Format and
-         * pull out the data we need to construct the Strings needed for the wireframes.
-         * <p/>
-         * Fortunately parsing is easy: constructor takes the JSON string and converts it
-         * into an Object hierarchy for us.
-         */
-        private String[] getWeatherDataFromJson(String forecastJsonStr, int numDays)
+        private String[] getDataFromJson(String articleJsonStr, int numArticles)
                 throws JSONException {
 
 // These are the names of the JSON objects that need to be extracted.
-            final String OWM_LIST = "list";
-            final String OWM_WEATHER = "weather";
-            final String OWM_TEMPERATURE = "temp";
-            final String OWM_MAX = "max";
-            final String OWM_MIN = "min";
-            final String OWM_DATETIME = "dt";
-            final String OWM_DESCRIPTION = "main";
+            final String NYT_RESP = "response";
+            final String NYT_DOCS = "docs";
+            final String NYT_HEAD = "headline";
+            final String NYT_MAINHEAD = "main";
+            final String NYT_URL = "web_url";
 
-            JSONObject forecastJson = new JSONObject(forecastJsonStr);
-            JSONArray weatherArray = forecastJson.getJSONArray(OWM_LIST);
+            JSONObject articlesJson = new JSONObject(articleJsonStr);
+            JSONObject respJson = articlesJson.getJSONObject(NYT_RESP); //get response object
+            JSONArray docsArray = respJson.getJSONArray(NYT_DOCS);   //get docs object inside response obj
 
-            String[] resultStrs = new String[numDays];
-            for (int i = 0; i < weatherArray.length(); i++) {
-// For now, using the format "Day, description, hi/low"
-                String day;
-                String description;
-                String highAndLow;
+            String[] resultStrs = new String[numArticles];
+            for (int i = 0; i < docsArray.length(); i++) {
+                //format is name : url
+                String art_url;
+                String art_headline;
 
-// Get the JSON object representing the day
-                JSONObject dayForecast = weatherArray.getJSONObject(i);
+                //get article headline and url
+                JSONObject articleItem = docsArray.getJSONObject(i);
+                art_url = articleItem.getString(NYT_URL);
+                JSONObject articleHeadline = articleItem.getJSONObject(NYT_HEAD);
+                art_headline = articleHeadline.getString(NYT_MAINHEAD);
 
-// The date/time is returned as a long. We need to convert that
-// into something human-readable, since most people won't read "1400356800" as
-// "this saturday".
-                long dateTime = dayForecast.getLong(OWM_DATETIME);
-                day = getReadableDateString(dateTime);
-
-// description is in a child array called "weather", which is 1 element long.
-                JSONObject weatherObject = dayForecast.getJSONArray(OWM_WEATHER).getJSONObject(0);
-                description = weatherObject.getString(OWM_DESCRIPTION);
-
-// Temperatures are in a child object called "temp". Try not to name variables
-// "temp" when working with temperature. It confuses everybody.
-                JSONObject temperatureObject = dayForecast.getJSONObject(OWM_TEMPERATURE);
-                double high = temperatureObject.getDouble(OWM_MAX);
-                double low = temperatureObject.getDouble(OWM_MIN);
-
-                highAndLow = formatHighLows(high, low);
-                resultStrs[i] = day + " - " + description + " - " + highAndLow;
+                //print article headline and url
+                resultStrs[i] = art_headline + " : " + art_url;
             }
-
             return resultStrs;
         }
 
         @Override
         protected String[] doInBackground(String... params) {
             // These two need to be declared outside the try/catch
-// so that they can be closed in the finally block.
-            int numDays = 7;
+            // so that they can be closed in the finally block.
+            int numArticles = 7;
             HttpURLConnection urlConnection = null;
             BufferedReader reader = null;
             // Will contain the raw JSON response as a string.
-            String forecastJsonStr = null;
+            String articleJsonStr = null;
             try {
                 // NYTimes key : c550556ff0968ef0ccab7f3dee8472e1:12:70068306
-// Construct the URL for the OpenWeatherMap query
-// Possible parameters are avaiable at OWM's forecast API page, at
-// http://openweathermap.org/API#forecast
-                URL url = new URL("http://api.openweathermap.org/data/2.5/forecast/daily?q=560034&mode=json&units=metric&cnt=7");
-// Create the request to OpenWeatherMap, and open the connection
+                URL url = new URL("http://api.nytimes.com/svc/search/v2/articlesearch.json?q=scary&begin_date=20141001&end_date=20141003&sort=oldest&facet_filter=true&hl=true&page=1&api-key=c550556ff0968ef0ccab7f3dee8472e1%3A12%3A70068306");
+                // Create the request to NYT, and open the connection
                 urlConnection = (HttpURLConnection) url.openConnection();
                 urlConnection.setRequestMethod("GET");
                 urlConnection.connect();
-// Read the input stream into a String
+                // Read the input stream into a String
                 InputStream inputStream = urlConnection.getInputStream();
                 StringBuffer buffer = new StringBuffer();
                 if (inputStream == null) {
-// Nothing to do.
+                    // Nothing to do.
                     return null;
                 }
                 reader = new BufferedReader(new InputStreamReader(inputStream));
                 String line;
                 while ((line = reader.readLine()) != null) {
-// Since it's JSON, adding a newline isn't necessary (it won't affect parsing)
-// But it does make debugging a *lot* easier if you print out the completed
-// buffer for debugging.
+                    // Since it's JSON, adding a newline isn't necessary (it won't affect parsing)
+                    // But it does make debugging a *lot* easier if you print out the completed
+                    // buffer for debugging.
                     buffer.append(line + "\n");
                 }
 
                 if (buffer.length() == 0) {
-// Stream was empty. No point in parsing.
+                    // Stream was empty. No point in parsing.
                     return null;
                 }
-                forecastJsonStr = buffer.toString();
+                articleJsonStr = buffer.toString();
             } catch (IOException e) {
-                Log.e("PlaceholderFragment", "Error ", e);
-// If the code didn't successfully get the weather data, there's no point in attemping
-// to parse it.
+                Log.e("topScaryFragment", "Error ", e);
+                // If the code didn't successfully get the weather data, there's no point in attemping
+                // to parse it.
                 return null;
             } finally {
                 if (urlConnection != null) {
@@ -211,12 +164,12 @@ public class topScaryFragment extends Fragment {
                     try {
                         reader.close();
                     } catch (final IOException e) {
-                        Log.e("PlaceholderFragment", "Error closing stream", e);
+                        Log.e("topScaryFragment", "Error closing stream", e);
                     }
                 }
             }
             try {
-                return getWeatherDataFromJson(forecastJsonStr, numDays);
+                return getDataFromJson(articleJsonStr, numArticles);
             } catch (JSONException e) {
                 Log.e(LOG_TAG, e.getMessage(), e);
                 e.printStackTrace();
@@ -228,9 +181,9 @@ public class topScaryFragment extends Fragment {
         @Override
         protected void onPostExecute(String[] result) {
             if (result != null) {
-                mForecastAdapter.clear();
+                ArticleAdapter.clear();
                 for (String dayForecastStr : result) {
-                    mForecastAdapter.add(dayForecastStr);
+                    ArticleAdapter.add(dayForecastStr);
                 }
 
             }
