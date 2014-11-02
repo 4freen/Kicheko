@@ -2,8 +2,10 @@ package com.project.pes.kicheko;
 
 /**
  * Created by Afreen on 25/10/14.
+ *
  */
 
+import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
@@ -14,6 +16,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 
@@ -74,6 +77,15 @@ public class topScaryFragment extends Fragment {
 
         ListView articlelist = (ListView) rootView.findViewById(R.id.listView_article);
         articlelist.setAdapter(ArticleAdapter);
+        articlelist.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+
+            @Override
+            public void onItemClick(AdapterView<?> adapterview, View view, int position, long l) {
+                String articles = ArticleAdapter.getItem(position);
+                Intent intent = new Intent(getActivity(), DetailActivity.class).putExtra(Intent.EXTRA_TEXT, articles);
+                startActivity(intent);
+            }
+        });
         return rootView;
     }
 
@@ -105,11 +117,11 @@ public class topScaryFragment extends Fragment {
                 //get article headline and url
                 JSONObject articleItem = docsArray.getJSONObject(i);
                 art_url = articleItem.getString(NYT_URL);
-                JSONObject articleHeadline = articleItem.getJSONObject(NYT_HEAD);
-                art_headline = articleHeadline.getString(NYT_MAINHEAD);
+                //JSONObject articleHeadline = articleItem.getJSONObject(NYT_HEAD);
+                //art_headline = articleHeadline.getString(NYT_MAINHEAD);
 
                 //print article headline and url
-                resultStrs[i] = art_headline + " : " + art_url;
+                resultStrs[i] = art_url;
             }
             return resultStrs;
         }
@@ -182,8 +194,8 @@ public class topScaryFragment extends Fragment {
         protected void onPostExecute(String[] result) {
             if (result != null) {
                 ArticleAdapter.clear();
-                for (String dayForecastStr : result) {
-                    ArticleAdapter.add(dayForecastStr);
+                for (String articleStr : result) {
+                    ArticleAdapter.add(articleStr);
                 }
 
             }
